@@ -3,6 +3,11 @@ var bodyParser = require('body-parser')
 var request = require('request')
 var app = express()
 
+var GoogleSpreadsheet = require('google-spreadsheet');
+
+var doc = new GoogleSpreadsheet('1Pv5SK6COZkc_H4jQ1B9HUqObhcGv7vbcE-3Wn5iZ5IQ');
+var sheet;
+
 app.set('port', (process.env.PORT || 5000))
 
 // Process application/x-www-form-urlencoded
@@ -36,8 +41,8 @@ app.post('/webhook/', function (req, res) {
         sender = event.sender.id
         if (event.message && event.message.text) {
             text = event.message.text
-            if (text === 'Generic') {
-                sendGenericMessage(sender)
+            if (text === 'Prompt') {
+                sendPromptMessage(sender, randomPrompt)
                 continue
             }
             sendTextMessage(sender, "Text received, echo: " + text.substring(0, 200))
@@ -75,37 +80,9 @@ function sendTextMessage(sender, text) {
     })
 }
 
-function sendGenericMessage(sender) {
+function sendPromptMessage(sender, text) {
     messageData = {
-        "attachment": {
-            "type": "template",
-            "payload": {
-                "template_type": "generic",
-                "elements": [{
-                    "title": "First card",
-                    "subtitle": "Element #1 of an hscroll",
-                    "image_url": "http://messengerdemo.parseapp.com/img/rift.png",
-                    "buttons": [{
-                        "type": "web_url",
-                        "url": "https://www.messenger.com",
-                        "title": "web url"
-                    }, {
-                        "type": "postback",
-                        "title": "Postback",
-                        "payload": "Payload for first element in a generic bubble",
-                    }],
-                }, {
-                    "title": "Second card",
-                    "subtitle": "Element #2 of an hscroll",
-                    "image_url": "http://messengerdemo.parseapp.com/img/gearvr.png",
-                    "buttons": [{
-                        "type": "postback",
-                        "title": "Postback",
-                        "payload": "Payload for second element in a generic bubble",
-                    }],
-                }]
-            }
-        }
+        text:text
     }
     request({
         url: 'https://graph.facebook.com/v2.6/me/messages',
@@ -122,4 +99,18 @@ function sendGenericMessage(sender) {
             console.log('Error: ', response.body.error)
         }
     })
+}
+
+//Google Sheets
+function randomPrompt {
+    var randomNumber = (Math.floor(Math.random() * 102)) + 1;
+    
+    sheet.getCells({
+        'min-row': randomNumber,
+        'max-row': randomNumber,
+        'return-empty': false
+    }, function(err, cells) {
+        var cell = cells[0];
+        return cell.value;
+    });
 }
